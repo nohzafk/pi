@@ -19,8 +19,8 @@ use crate::providers::Provider;
 use crate::retry::{classify_status, parse_retry_after, with_retry, Attempt, RetryConfig};
 use crate::stream::AssistantMessageEventStream;
 use crate::types::{
-    now_ms, AssistantMessage, AssistantMessageEvent, Content, Context, Message, Model, StopReason,
-    StreamOptions, ThinkingLevel, Usage,
+    now_ms, AssistantMessage, AssistantMessageEvent, CacheRetention, Content, Context, Message,
+    Model, StopReason, StreamOptions, ThinkingLevel, Usage,
 };
 
 const ANTHROPIC_VERSION: &str = "2023-06-01";
@@ -218,15 +218,57 @@ fn thinking_budget(level: ThinkingLevel) -> Option<u32> {
     }
 }
 
+fn cache_control_json(retention: CacheRetention) -> Option<Value> {
+    match retention {
+        CacheRetention::None => None,
+        CacheRetention::Short => Some(json!({"type": "ephemeral"})),
+        CacheRetention::Long => Some(json!({"type": "ephemeral", "ttl": "1h"})),
+    }
+}
+
+/// Build the raw Anthropic Messages request body. Exposed for tests/inspection;
+/// the streaming path goes through this same function.
+pub fn build_request_body(model: &Model, context: &Context, options: &StreamOptions) -> Value {
+    build_body(model, context, options)
+}
+
 fn build_body(model: &Model, context: &Context, options: &StreamOptions) -> Value {
+    let cc = cache_control_json(options.cache_retention);
+    let mut messages = convert_messages(&context.messages);
+    if let Some(cc) = &cc {
+        // Mark the last user-role message's last text content with cache_control.
+        if let Some(idx) = messages.iter().rposition(|m| m["role"] == "user") {
+            if let Some(content) = messages[idx].get_mut("content") {
+                if let Some(arr) = content.as_array_mut() {
+                    if let Some(last_text_idx) =
+                        arr.iter().rposition(|b| b.get("type") == Some(&json!("text")))
+                    {
+                        arr[last_text_idx]["cache_control"] = cc.clone();
+                    }
+                }
+            }
+        }
+    }
+
     let mut body = json!({
         "model": model.id,
         "max_tokens": options.max_tokens.unwrap_or(model.max_tokens),
-        "messages": convert_messages(&context.messages),
+        "messages": messages,
         "stream": true,
     });
     if let Some(sp) = &context.system_prompt {
-        body["system"] = json!(sp);
+        match &cc {
+            Some(cc) => {
+                body["system"] = json!([{
+                    "type": "text",
+                    "text": sp,
+                    "cache_control": cc,
+                }]);
+            }
+            None => {
+                body["system"] = json!(sp);
+            }
+        }
     }
     if let Some(t) = options.temperature {
         body["temperature"] = json!(t);
@@ -237,7 +279,7 @@ fn build_body(model: &Model, context: &Context, options: &StreamOptions) -> Valu
         }
     }
     if !context.tools.is_empty() {
-        let tools: Vec<Value> = context
+        let mut tools: Vec<Value> = context
             .tools
             .iter()
             .map(|t| {
@@ -248,6 +290,11 @@ fn build_body(model: &Model, context: &Context, options: &StreamOptions) -> Valu
                 })
             })
             .collect();
+        if let Some(cc) = &cc {
+            if let Some(last) = tools.last_mut() {
+                last["cache_control"] = cc.clone();
+            }
+        }
         body["tools"] = json!(tools);
     }
     body

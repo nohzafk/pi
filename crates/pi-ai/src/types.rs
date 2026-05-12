@@ -1,6 +1,18 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+/// Anthropic prompt-cache retention hint. When non-`None`, the Anthropic
+/// provider stamps `cache_control` markers on the system prompt, the last tool
+/// definition, and the last text block of the last user message.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum CacheRetention {
+    #[default]
+    None,
+    Short,
+    Long,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ThinkingLevel {
@@ -153,6 +165,8 @@ pub struct StreamOptions {
     pub base_url: Option<String>,
     /// Optional custom request headers.
     pub headers: std::collections::BTreeMap<String, String>,
+    /// Anthropic prompt-cache marker mode. Defaults to `None` (no markers).
+    pub cache_retention: CacheRetention,
 }
 
 /// Model descriptor — analogous to the Model<TApi> interface in pi-ai.
