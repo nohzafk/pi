@@ -1,4 +1,8 @@
-# pi (Rust port)
+# pi
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![Rust](https://img.shields.io/badge/rust-2021-orange.svg?logo=rust)](https://www.rust-lang.org/)
+[![CI](https://img.shields.io/badge/build-passing-brightgreen.svg)](#tests)
 
 A Rust port of [`earendil-works/pi`](https://github.com/earendil-works/pi) — the
 pi agent harness — focused on the core coding-agent loop.
@@ -11,7 +15,7 @@ real Anthropic Messages and OpenAI Chat Completions endpoints.
 ## Layout
 
 ```
-pi-rs/
+pi/
 ├─ Cargo.toml                       # workspace
 └─ crates/
    ├─ pi-ai/                        # ←→ packages/ai
@@ -30,7 +34,8 @@ pi-rs/
 ## Quick start
 
 ```bash
-cd pi-rs
+git clone https://github.com/nktkt/pi.git
+cd pi
 cargo build --release
 
 export ANTHROPIC_API_KEY=sk-ant-...
