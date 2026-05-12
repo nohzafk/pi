@@ -36,3 +36,17 @@ jobs:
       - name: cargo clippy
         if: matrix.rust == 'stable'
         run: cargo clippy --workspace --all-targets -- -D warnings
+
+  supply-chain:
+    name: supply-chain
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deny, cargo-audit
+      - name: cargo deny check
+        run: cargo deny check
+      - name: cargo audit
+        run: cargo audit
