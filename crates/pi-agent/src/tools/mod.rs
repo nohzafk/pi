@@ -2,13 +2,15 @@
 //!
 //! Mirrors the core toolset shipped in `packages/coding-agent/src/core/...`.
 
-pub mod read;
-pub mod write;
-pub mod edit;
 pub mod bash;
-pub mod ls;
-pub mod grep;
+pub mod edit;
 pub mod glob_tool;
+pub mod grep;
+pub mod ls;
+pub mod read;
+pub mod todo;
+pub mod web_fetch;
+pub mod write;
 
 use std::sync::Arc;
 
@@ -24,5 +26,7 @@ pub fn default_tools() -> Vec<Arc<dyn AgentTool>> {
         Arc::new(ls::LsTool),
         Arc::new(grep::GrepTool),
         Arc::new(glob_tool::GlobTool),
+        Arc::new(web_fetch::WebFetchTool),
+        Arc::new(todo::TodoTool::new()),
     ]
 }

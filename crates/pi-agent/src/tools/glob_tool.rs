@@ -30,15 +30,13 @@ impl AgentTool for GlobTool {
 
         let result = tokio::task::spawn_blocking(move || -> Result<String, String> {
             let mut buf = String::new();
-            let mut count = 0usize;
             let entries = glob::glob(&pattern).map_err(|e| e.to_string())?;
-            for path in entries.flatten() {
+            for (count, path) in entries.flatten().enumerate() {
                 if count >= max {
                     buf.push_str(&format!("... (truncated at {max})\n"));
                     break;
                 }
                 buf.push_str(&format!("{}\n", path.display()));
-                count += 1;
             }
             Ok(buf)
         })

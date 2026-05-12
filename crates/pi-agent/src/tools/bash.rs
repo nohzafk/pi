@@ -12,6 +12,9 @@ impl AgentTool for BashTool {
     fn name(&self) -> &str {
         "bash"
     }
+    fn requires_permission(&self) -> bool {
+        true
+    }
     fn description(&self) -> &str {
         "Run a shell command via `bash -lc <cmd>`. Returns combined stdout/stderr and exit code."
     }
@@ -35,10 +38,7 @@ impl AgentTool for BashTool {
             .and_then(|v| v.as_u64())
             .unwrap_or(120_000);
 
-        let fut = Command::new("bash")
-            .arg("-lc")
-            .arg(cmd)
-            .output();
+        let fut = Command::new("bash").arg("-lc").arg(cmd).output();
         let output = match timeout(Duration::from_millis(timeout_ms), fut).await {
             Ok(Ok(o)) => o,
             Ok(Err(e)) => return Err(format!("spawn: {e}")),

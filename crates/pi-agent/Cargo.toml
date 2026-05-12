@@ -10,6 +10,7 @@ authors.workspace = true
 [dependencies]
 pi-ai = { path = "../pi-ai" }
 tokio = { workspace = true }
+tokio-util = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 async-trait = { workspace = true }
@@ -23,3 +24,4 @@ uuid = { workspace = true }
 glob = { workspace = true }
 ignore = { workspace = true }
 shell-words = { workspace = true }
+reqwest = { workspace = true }

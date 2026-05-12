@@ -22,8 +22,13 @@ impl AgentTool for LsTool {
         })
     }
     async fn execute(&self, _id: &str, args: Value) -> Result<AgentToolResult, String> {
-        let path = args.get("path").and_then(|v| v.as_str()).ok_or("missing 'path'")?;
-        let mut read = fs::read_dir(path).await.map_err(|e| format!("ls {path}: {e}"))?;
+        let path = args
+            .get("path")
+            .and_then(|v| v.as_str())
+            .ok_or("missing 'path'")?;
+        let mut read = fs::read_dir(path)
+            .await
+            .map_err(|e| format!("ls {path}: {e}"))?;
         let mut buf = String::new();
         while let Some(entry) = read.next_entry().await.map_err(|e| e.to_string())? {
             let ft = entry.file_type().await.map_err(|e| e.to_string())?;
@@ -34,7 +39,11 @@ impl AgentTool for LsTool {
             } else {
                 "file"
             };
-            buf.push_str(&format!("{}\t{}\n", kind, entry.file_name().to_string_lossy()));
+            buf.push_str(&format!(
+                "{}\t{}\n",
+                kind,
+                entry.file_name().to_string_lossy()
+            ));
         }
         Ok(AgentToolResult::text(buf))
     }

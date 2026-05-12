@@ -15,6 +15,7 @@ path = "src/main.rs"
 pi-ai = { path = "../pi-ai" }
 pi-agent = { path = "../pi-agent" }
 tokio = { workspace = true }
+tokio-util = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
@@ -25,3 +26,4 @@ clap = { workspace = true }
 chrono = { workspace = true }
 futures = { workspace = true }
 dirs = { workspace = true }
+async-trait = { workspace = true }

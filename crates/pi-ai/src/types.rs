@@ -1,21 +1,16 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ThinkingLevel {
+    #[default]
     Off,
     Minimal,
     Low,
     Medium,
     High,
     Xhigh,
-}
-
-impl Default for ThinkingLevel {
-    fn default() -> Self {
-        ThinkingLevel::Off
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -146,23 +141,18 @@ pub struct Context {
     pub tools: Vec<Tool>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct StreamOptions {
     pub temperature: Option<f32>,
     pub max_tokens: Option<u32>,
     pub api_key: Option<String>,
     pub reasoning: Option<ThinkingLevel>,
-}
-
-impl Default for StreamOptions {
-    fn default() -> Self {
-        Self {
-            temperature: None,
-            max_tokens: None,
-            api_key: None,
-            reasoning: None,
-        }
-    }
+    /// Cancellation token honored by the provider HTTP client and SSE loop.
+    pub cancel: Option<tokio_util::sync::CancellationToken>,
+    /// Override base URL (used by OpenAI-compatible passthrough providers).
+    pub base_url: Option<String>,
+    /// Optional custom request headers.
+    pub headers: std::collections::BTreeMap<String, String>,
 }
 
 /// Model descriptor — analogous to the Model<TApi> interface in pi-ai.
@@ -231,21 +221,92 @@ impl Model {
             max_tokens: 16_384,
         }
     }
+
+    pub fn gemini_2_0_flash() -> Self {
+        Self {
+            id: "gemini-2.0-flash".into(),
+            name: "Gemini 2.0 Flash".into(),
+            api: "google-generative-ai".into(),
+            provider: "google".into(),
+            base_url: "https://generativelanguage.googleapis.com".into(),
+            reasoning: false,
+            context_window: 1_000_000,
+            max_tokens: 8_192,
+        }
+    }
+
+    /// OpenAI-compatible passthrough: any provider whose API matches OpenAI Chat
+    /// Completions (OpenRouter, Together, Groq, Cerebras, DeepSeek, Fireworks,
+    /// xAI, etc.). Construct via `openai_compat("groq", "...", "...", ...)`
+    /// or by overriding `base_url`.
+    pub fn openai_compat(
+        provider: impl Into<String>,
+        id: impl Into<String>,
+        base_url: impl Into<String>,
+        context_window: u32,
+        max_tokens: u32,
+    ) -> Self {
+        let id = id.into();
+        Self {
+            name: id.clone(),
+            id,
+            api: "openai-completions".into(),
+            provider: provider.into(),
+            base_url: base_url.into(),
+            reasoning: false,
+            context_window,
+            max_tokens,
+        }
+    }
 }
 
 /// Events emitted by streaming completions, matching `AssistantMessageEvent` in pi-ai.
 #[derive(Debug, Clone)]
 pub enum AssistantMessageEvent {
     Start,
-    TextStart { content_index: usize },
-    TextDelta { content_index: usize, delta: String },
-    TextEnd { content_index: usize, content: String },
-    ThinkingStart { content_index: usize },
-    ThinkingDelta { content_index: usize, delta: String },
-    ThinkingEnd { content_index: usize, content: String },
-    ToolCallStart { content_index: usize, id: String, name: String },
-    ToolCallDelta { content_index: usize, delta: String },
-    ToolCallEnd { content_index: usize, id: String, name: String, arguments: Value },
-    Done { reason: StopReason, message: AssistantMessage },
-    Error { reason: StopReason, error: AssistantMessage },
+    TextStart {
+        content_index: usize,
+    },
+    TextDelta {
+        content_index: usize,
+        delta: String,
+    },
+    TextEnd {
+        content_index: usize,
+        content: String,
+    },
+    ThinkingStart {
+        content_index: usize,
+    },
+    ThinkingDelta {
+        content_index: usize,
+        delta: String,
+    },
+    ThinkingEnd {
+        content_index: usize,
+        content: String,
+    },
+    ToolCallStart {
+        content_index: usize,
+        id: String,
+        name: String,
+    },
+    ToolCallDelta {
+        content_index: usize,
+        delta: String,
+    },
+    ToolCallEnd {
+        content_index: usize,
+        id: String,
+        name: String,
+        arguments: Value,
+    },
+    Done {
+        reason: StopReason,
+        message: AssistantMessage,
+    },
+    Error {
+        reason: StopReason,
+        error: AssistantMessage,
+    },
 }

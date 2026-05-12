@@ -11,6 +11,9 @@ impl AgentTool for EditTool {
     fn name(&self) -> &str {
         "edit"
     }
+    fn requires_permission(&self) -> bool {
+        true
+    }
     fn description(&self) -> &str {
         "Replace one occurrence (or all, with replace_all) of old_string with new_string in the file at path."
     }
@@ -27,7 +30,10 @@ impl AgentTool for EditTool {
         })
     }
     async fn execute(&self, _id: &str, args: Value) -> Result<AgentToolResult, String> {
-        let path = args.get("path").and_then(|v| v.as_str()).ok_or("missing 'path'")?;
+        let path = args
+            .get("path")
+            .and_then(|v| v.as_str())
+            .ok_or("missing 'path'")?;
         let old_s = args
             .get("old_string")
             .and_then(|v| v.as_str())
@@ -36,7 +42,10 @@ impl AgentTool for EditTool {
             .get("new_string")
             .and_then(|v| v.as_str())
             .ok_or("missing 'new_string'")?;
-        let replace_all = args.get("replace_all").and_then(|v| v.as_bool()).unwrap_or(false);
+        let replace_all = args
+            .get("replace_all")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
 
         let text = fs::read_to_string(path)
             .await
@@ -59,6 +68,8 @@ impl AgentTool for EditTool {
             .await
             .map_err(|e| format!("write {path}: {e}"))?;
         let n = if replace_all { count } else { 1 };
-        Ok(AgentToolResult::text(format!("edited {path}: {n} replacement(s)")))
+        Ok(AgentToolResult::text(format!(
+            "edited {path}: {n} replacement(s)"
+        )))
     }
 }

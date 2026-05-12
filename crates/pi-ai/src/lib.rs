@@ -8,11 +8,14 @@
 
 pub mod error;
 pub mod providers;
+pub mod retry;
 pub mod stream;
 pub mod types;
 
 pub use error::{Error, Result};
-pub use providers::{anthropic::AnthropicProvider, openai::OpenAiProvider, Provider};
+pub use providers::{
+    anthropic::AnthropicProvider, google::GoogleProvider, openai::OpenAiProvider, Provider,
+};
 pub use stream::AssistantMessageEventStream;
 pub use types::{
     now_ms, AssistantMessage, AssistantMessageEvent, Content, Context, Message, Model, StopReason,
@@ -21,6 +24,10 @@ pub use types::{
 
 /// Entry point that mirrors `streamSimple()` in pi-ai TS: pick the provider
 /// implementation from `model.api` and return a stream of message events.
+///
+/// `openai-completions` covers OpenAI and every OpenAI-compatible passthrough
+/// (OpenRouter, Together, Groq, Cerebras, DeepSeek, Fireworks, xAI, etc.) —
+/// just set `Model::base_url` (or `StreamOptions::base_url`) accordingly.
 pub async fn stream_simple(
     model: &Model,
     context: &Context,
@@ -28,13 +35,12 @@ pub async fn stream_simple(
 ) -> Result<AssistantMessageEventStream> {
     match model.api.as_str() {
         "anthropic-messages" => {
-            let p = AnthropicProvider::new();
-            p.stream(model, context, options).await
+            AnthropicProvider::new()
+                .stream(model, context, options)
+                .await
         }
-        "openai-completions" => {
-            let p = OpenAiProvider::new();
-            p.stream(model, context, options).await
-        }
+        "openai-completions" => OpenAiProvider::new().stream(model, context, options).await,
+        "google-generative-ai" => GoogleProvider::new().stream(model, context, options).await,
         other => Err(Error::UnsupportedProvider(other.into())),
     }
 }

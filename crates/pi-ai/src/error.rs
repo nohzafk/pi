@@ -17,6 +17,12 @@ pub enum Error {
     #[error("provider returned an error (status {status}): {body}")]
     ProviderError { status: u16, body: String },
 
+    #[error("request cancelled")]
+    Cancelled,
+
+    #[error("retried {attempts} times, last error: {source}")]
+    RetryExhausted { attempts: u32, source: Box<Error> },
+
     #[error("json: {0}")]
     Json(#[from] serde_json::Error),
 

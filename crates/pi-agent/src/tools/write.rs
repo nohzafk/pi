@@ -11,6 +11,9 @@ impl AgentTool for WriteTool {
     fn name(&self) -> &str {
         "write"
     }
+    fn requires_permission(&self) -> bool {
+        true
+    }
     fn description(&self) -> &str {
         "Write the given content to the path, replacing any existing file. Creates parent directories as needed."
     }
@@ -25,7 +28,10 @@ impl AgentTool for WriteTool {
         })
     }
     async fn execute(&self, _id: &str, args: Value) -> Result<AgentToolResult, String> {
-        let path = args.get("path").and_then(|v| v.as_str()).ok_or("missing 'path'")?;
+        let path = args
+            .get("path")
+            .and_then(|v| v.as_str())
+            .ok_or("missing 'path'")?;
         let content = args
             .get("content")
             .and_then(|v| v.as_str())
@@ -38,6 +44,10 @@ impl AgentTool for WriteTool {
         fs::write(path, content)
             .await
             .map_err(|e| format!("write {path}: {e}"))?;
-        Ok(AgentToolResult::text(format!("wrote {} bytes to {}", content.len(), path)))
+        Ok(AgentToolResult::text(format!(
+            "wrote {} bytes to {}",
+            content.len(),
+            path
+        )))
     }
 }

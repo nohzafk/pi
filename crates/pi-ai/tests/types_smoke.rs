@@ -27,6 +27,9 @@ fn round_trip_tool_call_content() {
 
 #[test]
 fn stop_reason_serializes_camel_case() {
-    assert_eq!(serde_json::to_value(StopReason::ToolUse).unwrap(), "toolUse");
+    assert_eq!(
+        serde_json::to_value(StopReason::ToolUse).unwrap(),
+        "toolUse"
+    );
     assert_eq!(serde_json::to_value(StopReason::Stop).unwrap(), "stop");
 }

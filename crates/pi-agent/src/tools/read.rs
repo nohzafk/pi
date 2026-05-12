@@ -26,9 +26,18 @@ impl AgentTool for ReadTool {
         })
     }
     async fn execute(&self, _id: &str, args: Value) -> Result<AgentToolResult, String> {
-        let path = args.get("path").and_then(|v| v.as_str()).ok_or("missing 'path'")?;
-        let offset = args.get("offset").and_then(|v| v.as_u64()).map(|v| v as usize);
-        let limit = args.get("limit").and_then(|v| v.as_u64()).map(|v| v as usize);
+        let path = args
+            .get("path")
+            .and_then(|v| v.as_str())
+            .ok_or("missing 'path'")?;
+        let offset = args
+            .get("offset")
+            .and_then(|v| v.as_u64())
+            .map(|v| v as usize);
+        let limit = args
+            .get("limit")
+            .and_then(|v| v.as_u64())
+            .map(|v| v as usize);
 
         let text = fs::read_to_string(path)
             .await

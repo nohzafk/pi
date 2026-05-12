@@ -8,18 +8,18 @@ use pi_agent::types::AgentTool;
 use serde_json::json;
 
 fn scratch_dir() -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("pi-rs-test-{}", uuid()));
-    std::fs::create_dir_all(&dir).unwrap();
-    dir
-}
-
-fn uuid() -> String {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    let n = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static COUNTER: AtomicU64 = AtomicU64::new(0);
+    let n = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
         .as_nanos();
-    format!("{n:x}")
+    let c = COUNTER.fetch_add(1, Ordering::Relaxed);
+    let tid = format!("{:?}", std::thread::current().id());
+    let tid_filtered: String = tid.chars().filter(|c| c.is_alphanumeric()).collect();
+    let dir = std::env::temp_dir().join(format!("pi-rs-test-{n:x}-{c}-{tid_filtered}"));
+    std::fs::create_dir_all(&dir).unwrap();
+    dir
 }
 
 #[tokio::test]
@@ -29,10 +29,7 @@ async fn write_then_read_roundtrips() {
     let path_s = path.to_string_lossy().to_string();
 
     let res = write::WriteTool
-        .execute(
-            "1",
-            json!({"path": path_s, "content": "hello\nworld\n"}),
-        )
+        .execute("1", json!({"path": path_s, "content": "hello\nworld\n"}))
         .await
         .unwrap();
     assert!(matches!(res.content[0], pi_ai::Content::Text { .. }));

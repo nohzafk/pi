@@ -8,7 +8,6 @@ pub const APP_NAME: &str = "pi";
 pub struct AppConfig {
     pub model: Model,
     pub max_turns: u32,
-    #[allow(dead_code)] // reserved for parity with `.pi/` directory in the original
     pub config_dir: PathBuf,
 }
 
