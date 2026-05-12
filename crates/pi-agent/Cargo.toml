@@ -1,14 +1,18 @@
 [package]
 name = "pi-agent"
-description = "Agent runtime with tool calling (Rust port of @earendil-works/pi-agent-core)"
+description = "Agent runtime with tool calling (Rust port of @earendil-works/pi-agent-core). Streaming agent loop, permission policy, built-in tools (read/write/edit/bash/grep/glob/web_fetch/todo)."
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
+readme = "README.md"
+keywords = ["llm", "ai", "agent", "tools", "coding-agent"]
+categories = ["asynchronous", "api-bindings"]
 
 [dependencies]
-pi-ai = { path = "../pi-ai" }
+pi-ai = { path = "../pi-ai", version = "1.0.0" }
 tokio = { workspace = true }
 tokio-util = { workspace = true }
 serde = { workspace = true }

@@ -1,11 +1,15 @@
 [package]
 name = "pi-ai"
-description = "Unified multi-provider LLM API (Rust port of @earendil-works/pi-ai)"
+description = "Unified multi-provider LLM API (Rust port of @earendil-works/pi-ai). Streams from Anthropic, OpenAI, Google Gemini, and any OpenAI-compatible endpoint."
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
+readme = "README.md"
+keywords = ["llm", "ai", "anthropic", "openai", "agent"]
+categories = ["api-bindings", "asynchronous"]
 
 [dependencies]
 tokio = { workspace = true }
