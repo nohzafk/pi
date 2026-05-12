@@ -126,6 +126,12 @@ cargo test
 Tests cover serialization round-trips for `pi-ai` types and direct execution of
 every builtin tool against a tempdir. No network access required.
 
+## Roadmap
+
+See [ROADMAP.md](./ROADMAP.md) for the planned path to feature parity —
+streaming providers, session persistence, MCP, more LLM backends, and 1.0
+release tooling.
+
 ## License
 
 MIT — same as the upstream project.
