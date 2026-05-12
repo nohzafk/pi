@@ -1,19 +1,23 @@
 [package]
 name = "pi-coding-agent"
-description = "Interactive coding agent CLI (Rust port of @earendil-works/pi-coding-agent)"
+description = "Interactive coding agent CLI (Rust port of @earendil-works/pi-coding-agent). Streaming REPL, session persistence, AGENTS.md loader, slash commands, per-tool permissions. Install with `cargo install pi-coding-agent`; the binary is `pi`."
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
+readme = "README.md"
+keywords = ["llm", "ai", "coding-agent", "cli", "agent"]
+categories = ["command-line-utilities", "development-tools"]
 
 [[bin]]
 name = "pi"
 path = "src/main.rs"
 
 [dependencies]
-pi-ai = { path = "../pi-ai" }
-pi-agent = { path = "../pi-agent" }
+pi-ai = { path = "../pi-ai", version = "1.0.0" }
+pi-agent = { path = "../pi-agent", version = "1.0.0" }
 tokio = { workspace = true }
 tokio-util = { workspace = true }
 serde = { workspace = true }
