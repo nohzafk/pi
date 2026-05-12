@@ -59,6 +59,15 @@ async fn edit_replaces_single_occurrence() {
         .await
         .unwrap();
     assert!(res.content[0].as_text().unwrap().contains("edited"));
+    let diff = res.content[1].as_text().unwrap();
+    assert!(
+        diff.contains("-foo bar baz"),
+        "diff missing '-foo bar baz':\n{diff}"
+    );
+    assert!(
+        diff.contains("+foo BAR baz"),
+        "diff missing '+foo BAR baz':\n{diff}"
+    );
     let after = std::fs::read_to_string(&path).unwrap();
     assert_eq!(after, "foo BAR baz");
 }

@@ -29,3 +29,4 @@ glob = { workspace = true }
 ignore = { workspace = true }
 shell-words = { workspace = true }
 reqwest = { workspace = true }
+similar = "2.7"

@@ -1,5 +1,7 @@
 use async_trait::async_trait;
+use pi_ai::Content;
 use serde_json::{json, Value};
+use similar::TextDiff;
 use tokio::fs;
 
 use crate::types::{AgentTool, AgentToolResult};
@@ -15,7 +17,7 @@ impl AgentTool for EditTool {
         true
     }
     fn description(&self) -> &str {
-        "Replace one occurrence (or all, with replace_all) of old_string with new_string in the file at path."
+        "Replace one occurrence (or all, with replace_all) of old_string with new_string in the file at path. Returns a unified diff of the change."
     }
     fn parameters(&self) -> Value {
         json!({
@@ -47,10 +49,10 @@ impl AgentTool for EditTool {
             .and_then(|v| v.as_bool())
             .unwrap_or(false);
 
-        let text = fs::read_to_string(path)
+        let original = fs::read_to_string(path)
             .await
             .map_err(|e| format!("read {path}: {e}"))?;
-        let count = text.matches(old_s).count();
+        let count = original.matches(old_s).count();
         if count == 0 {
             return Err(format!("old_string not found in {path}"));
         }
@@ -59,17 +61,34 @@ impl AgentTool for EditTool {
                 "old_string occurs {count} times in {path}; pass replace_all=true or expand the match"
             ));
         }
-        let updated = if replace_all {
-            text.replace(old_s, new_s)
+        let replaced = if replace_all {
+            original.replace(old_s, new_s)
         } else {
-            text.replacen(old_s, new_s, 1)
+            original.replacen(old_s, new_s, 1)
         };
-        fs::write(path, updated)
+        // Preserve CRLF line endings if the original used them.
+        let updated = if original.contains("\r\n") {
+            replaced.replace("\r\n", "\n").replace('\n', "\r\n")
+        } else {
+            replaced
+        };
+        fs::write(path, &updated)
             .await
             .map_err(|e| format!("write {path}: {e}"))?;
         let n = if replace_all { count } else { 1 };
-        Ok(AgentToolResult::text(format!(
-            "edited {path}: {n} replacement(s)"
-        )))
+
+        let diff = TextDiff::from_lines(&original, &updated)
+            .unified_diff()
+            .header(&format!("a/{path}"), &format!("b/{path}"))
+            .to_string();
+
+        Ok(AgentToolResult {
+            content: vec![
+                Content::text(format!("edited {path}: {n} replacement(s)")),
+                Content::text(diff),
+            ],
+            details: Value::Null,
+            terminate: false,
+        })
     }
 }
