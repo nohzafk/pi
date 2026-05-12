@@ -274,6 +274,7 @@ impl Provider for OpenAiProvider {
         let api = model.api.clone();
         let provider = model.provider.clone();
         let model_id = model.id.clone();
+        let pricing = model.pricing.clone();
         let cancel_for_stream = cancel.clone();
 
         let s = stream! {
@@ -407,6 +408,7 @@ impl Provider for OpenAiProvider {
                 });
             }
 
+            usage.cost = usage.compute_cost(&pricing);
             let message = AssistantMessage {
                 content: out_content,
                 api,

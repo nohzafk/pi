@@ -351,6 +351,7 @@ impl Provider for AnthropicProvider {
         let api = model.api.clone();
         let provider = model.provider.clone();
         let model_id = model.id.clone();
+        let pricing = model.pricing.clone();
         let cancel_for_stream = cancel.clone();
 
         let s = stream! {
@@ -484,12 +485,14 @@ impl Provider for AnthropicProvider {
                     SseEvent::MessageStop => {}
                     SseEvent::Error { error } => {
                         let err_msg = format!("{}: {}", error.kind, error.message);
+                        let mut err_usage = usage.clone();
+                        err_usage.cost = err_usage.compute_cost(&pricing);
                         let am = AssistantMessage {
                             content: vec![],
                             api: api.clone(),
                             provider: provider.clone(),
                             model: response_model.clone().unwrap_or_else(|| model_id.clone()),
-                            usage: usage.clone(),
+                            usage: err_usage,
                             stop_reason: StopReason::Error,
                             error_message: Some(err_msg),
                             timestamp: now_ms(),
@@ -501,6 +504,7 @@ impl Provider for AnthropicProvider {
             }
 
             usage.total_tokens = usage.input + usage.output;
+            usage.cost = usage.compute_cost(&pricing);
             let mut out_content = Vec::with_capacity(order.len());
             for idx in &order {
                 if let Some(st) = blocks.get(idx) {

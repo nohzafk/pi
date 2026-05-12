@@ -253,6 +253,7 @@ impl Provider for GoogleProvider {
         let api = model.api.clone();
         let provider = model.provider.clone();
         let model_id = model.id.clone();
+        let pricing = model.pricing.clone();
         let cancel_for_stream = cancel.clone();
 
         let s = stream! {
@@ -343,6 +344,7 @@ impl Provider for GoogleProvider {
                 out_content.push(Content::ToolCall { id, name, arguments: args });
             }
             let _ = text_index;
+            usage.cost = usage.compute_cost(&pricing);
             let message = AssistantMessage {
                 content: out_content,
                 api,

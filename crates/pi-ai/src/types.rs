@@ -60,6 +60,54 @@ pub struct Usage {
     pub cache_write: u64,
     #[serde(default)]
     pub total_tokens: u64,
+    #[serde(default)]
+    pub cost: Cost,
+}
+
+/// Accumulated USD cost for a single assistant message, broken down by
+/// input / output / cache-read / cache-write token classes.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct Cost {
+    #[serde(default)]
+    pub input: f64,
+    #[serde(default)]
+    pub output: f64,
+    #[serde(default)]
+    pub cache_read: f64,
+    #[serde(default)]
+    pub cache_write: f64,
+    #[serde(default)]
+    pub total: f64,
+}
+
+/// Per-million-token USD pricing for a model.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct ModelPricing {
+    #[serde(default)]
+    pub input: f64,
+    #[serde(default)]
+    pub output: f64,
+    #[serde(default)]
+    pub cache_read: f64,
+    #[serde(default)]
+    pub cache_write: f64,
+}
+
+impl Usage {
+    /// Compute the USD cost of this usage given a model's pricing.
+    pub fn compute_cost(&self, p: &ModelPricing) -> Cost {
+        let input = self.input as f64 * p.input / 1_000_000.0;
+        let output = self.output as f64 * p.output / 1_000_000.0;
+        let cache_read = self.cache_read as f64 * p.cache_read / 1_000_000.0;
+        let cache_write = self.cache_write as f64 * p.cache_write / 1_000_000.0;
+        Cost {
+            input,
+            output,
+            cache_read,
+            cache_write,
+            total: input + output + cache_read + cache_write,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -166,6 +214,7 @@ pub struct Model {
     pub reasoning: bool,
     pub context_window: u32,
     pub max_tokens: u32,
+    pub pricing: ModelPricing,
 }
 
 impl Model {
@@ -180,6 +229,12 @@ impl Model {
             reasoning: true,
             context_window: 200_000,
             max_tokens: 8_192,
+            pricing: ModelPricing {
+                input: 3.0,
+                output: 15.0,
+                cache_read: 0.30,
+                cache_write: 3.75,
+            },
         }
     }
 
@@ -193,6 +248,12 @@ impl Model {
             reasoning: true,
             context_window: 200_000,
             max_tokens: 8_192,
+            pricing: ModelPricing {
+                input: 15.0,
+                output: 75.0,
+                cache_read: 1.50,
+                cache_write: 18.75,
+            },
         }
     }
 
@@ -206,6 +267,12 @@ impl Model {
             reasoning: false,
             context_window: 128_000,
             max_tokens: 16_384,
+            pricing: ModelPricing {
+                input: 0.15,
+                output: 0.60,
+                cache_read: 0.0,
+                cache_write: 0.0,
+            },
         }
     }
 
@@ -219,6 +286,12 @@ impl Model {
             reasoning: false,
             context_window: 128_000,
             max_tokens: 16_384,
+            pricing: ModelPricing {
+                input: 2.50,
+                output: 10.0,
+                cache_read: 0.0,
+                cache_write: 0.0,
+            },
         }
     }
 
@@ -232,6 +305,12 @@ impl Model {
             reasoning: false,
             context_window: 1_000_000,
             max_tokens: 8_192,
+            pricing: ModelPricing {
+                input: 0.10,
+                output: 0.40,
+                cache_read: 0.0,
+                cache_write: 0.0,
+            },
         }
     }
 
@@ -256,6 +335,7 @@ impl Model {
             reasoning: false,
             context_window,
             max_tokens,
+            pricing: ModelPricing::default(),
         }
     }
 }

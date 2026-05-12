@@ -146,13 +146,17 @@ fn handle_slash(line: &str, app: &AppConfig, session: &mut Session) -> anyhow::R
         "/cost" => {
             let mut total_in = 0u64;
             let mut total_out = 0u64;
+            let mut total_cost = 0.0f64;
             for m in &session.messages {
                 if let Message::Assistant(a) = m {
                     total_in += a.usage.input;
                     total_out += a.usage.output;
+                    total_cost += a.usage.cost.total;
                 }
             }
-            eprintln!("input tokens: {total_in}  output tokens: {total_out}");
+            eprintln!(
+                "tokens: in={total_in} out={total_out}  cost: ${total_cost:.4}"
+            );
         }
         "/sessions" => {
             let summaries = crate::session::list(&app.config_dir)?;
