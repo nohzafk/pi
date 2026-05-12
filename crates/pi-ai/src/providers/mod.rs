@@ -1,6 +1,7 @@
 pub mod anthropic;
 pub mod google;
 pub mod openai;
+pub mod openai_responses;
 
 use async_trait::async_trait;
 

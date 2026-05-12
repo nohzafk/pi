@@ -236,6 +236,20 @@ impl Model {
         }
     }
 
+    /// OpenAI GPT-5 — reasoning model accessed via the Responses API.
+    pub fn openai_gpt_5() -> Self {
+        Self {
+            id: "gpt-5".into(),
+            name: "GPT-5".into(),
+            api: "openai-responses".into(),
+            provider: "openai".into(),
+            base_url: "https://api.openai.com/v1".into(),
+            reasoning: true,
+            context_window: 200_000,
+            max_tokens: 16_384,
+        }
+    }
+
     pub fn gemini_2_0_flash() -> Self {
         Self {
             id: "gemini-2.0-flash".into(),
