@@ -71,6 +71,12 @@ through 1.0.0 of the original ROADMAP has shipped.
   single-POST/replayed-as-Done behavior is gone.
 - Workspace version bumped to **1.0.0**.
 
+### Published
+
+- [`pi-ai`](https://crates.io/crates/pi-ai) and
+  [`pi-agent`](https://crates.io/crates/pi-agent) published to crates.io
+  alongside the GitHub release.
+
 ### Not in 1.0 (future milestones)
 
 - AWS Bedrock and OpenAI Responses API

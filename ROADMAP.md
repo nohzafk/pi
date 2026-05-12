@@ -62,7 +62,7 @@
       Linux (gnu) per tag via `release.yml`.
 - [x] **Structured tracing** with `#[instrument]` on the agent loop.
 - [x] **Typed error model** (`pi_agent::AgentError` enum).
-- [ ] **Crate publishing** of `pi-ai` and `pi-agent` to crates.io. (1.0.1)
+- [x] **Crate publishing** of `pi-ai` and `pi-agent` to crates.io.
 - [ ] **Documentation site** under `docs/` (mdBook). (1.x)
 
 ## Beyond 1.0 — out of scope (no plans)

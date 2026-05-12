@@ -3,7 +3,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Rust](https://img.shields.io/badge/rust-2021-orange.svg?logo=rust)](https://www.rust-lang.org/)
 [![CI](https://github.com/nktkt/pi/actions/workflows/ci.yml/badge.svg)](https://github.com/nktkt/pi/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](./CHANGELOG.md)
+[![pi-ai on crates.io](https://img.shields.io/crates/v/pi-ai.svg?label=pi-ai)](https://crates.io/crates/pi-ai)
+[![pi-agent on crates.io](https://img.shields.io/crates/v/pi-agent.svg?label=pi-agent)](https://crates.io/crates/pi-agent)
 
 A Rust port of [`earendil-works/pi`](https://github.com/earendil-works/pi) —
 the pi agent harness — focused on the core coding-agent loop.
@@ -31,6 +32,20 @@ pi/
 | `@earendil-works/pi-coding-agent` | `pi-coding-agent` | `pi` CLI: print mode (`-p`), interactive REPL with streaming render, **session persistence** + `--resume`, **AGENTS.md / CLAUDE.md loader**, slash commands (`/help /reset /model /tools /cost /sessions /resume /session`), interactive permission prompts (`--yolo` to skip). `pi sessions list/show/delete` subcommand. |
 | `@earendil-works/pi-tui` | — | Not ported (TS terminal renderer). |
 | `@earendil-works/pi-web-ui` | — | Not ported (browser components). |
+
+## Reusing the runtime
+
+The streaming LLM API and agent runtime are published on crates.io:
+
+```toml
+[dependencies]
+pi-ai = "1.0"      # provider-agnostic streaming
+pi-agent = "1.0"   # agent loop, permission policy, built-in tools
+```
+
+See the crate-level docs at
+[crates.io/crates/pi-ai](https://crates.io/crates/pi-ai) and
+[crates.io/crates/pi-agent](https://crates.io/crates/pi-agent).
 
 ## Quick start
 
