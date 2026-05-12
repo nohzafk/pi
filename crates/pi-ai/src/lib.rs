@@ -19,8 +19,9 @@ pub use providers::{
 };
 pub use stream::AssistantMessageEventStream;
 pub use types::{
-    now_ms, AssistantMessage, AssistantMessageEvent, CacheRetention, Content, Context, Message,
-    Model, StopReason, StreamOptions, ThinkingLevel, Tool, ToolResultMessage, Usage,
+    now_ms, AssistantMessage, AssistantMessageEvent, CacheRetention, Content, Context, Cost,
+    Message, Model, ModelPricing, StopReason, StreamOptions, ThinkingLevel, Tool, ToolResultMessage,
+    Usage,
 };
 
 /// Entry point that mirrors `streamSimple()` in pi-ai TS: pick the provider
