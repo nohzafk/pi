@@ -4,10 +4,11 @@
 use std::io::{BufRead, Write};
 use std::sync::Arc;
 
+use futures::StreamExt;
 use pi_agent::{
     run_agent_with_history, tools::default_tools, AgentConfig, AgentEvent, PermissionPolicy,
 };
-use pi_ai::Message;
+use pi_ai::{AssistantMessageEvent, Context, Message, StreamOptions};
 use tokio::sync::mpsc;
 
 use crate::config::AppConfig;
@@ -49,6 +50,12 @@ pub async fn run_interactive(
             continue;
         }
         if prompt.starts_with('/') {
+            if prompt == "/compact" || prompt.starts_with("/compact ") {
+                if let Err(e) = handle_compact(app, &mut session).await {
+                    eprintln!("compact failed: {e}");
+                }
+                continue;
+            }
             if !handle_slash(&prompt, app, &mut session)? {
                 break;
             }
@@ -130,6 +137,7 @@ fn handle_slash(line: &str, app: &AppConfig, session: &mut Session) -> anyhow::R
             eprintln!("/sessions            list saved sessions");
             eprintln!("/resume <id>         load a saved session by id");
             eprintln!("/session             print current session id");
+            eprintln!("/compact             summarize older messages into a recap");
         }
         "/reset" => {
             *session = Session::new(&app.model);
@@ -185,6 +193,47 @@ fn handle_slash(line: &str, app: &AppConfig, session: &mut Session) -> anyhow::R
         }
     }
     Ok(true)
+}
+
+/// Summarize all but the last 4 messages into a single synthetic user
+/// message, replacing the older slice in-place. Prints `(nothing to compact)`
+/// if fewer than 4 messages exist.
+async fn handle_compact(app: &AppConfig, session: &mut Session) -> anyhow::Result<()> {
+    let total = session.messages.len();
+    if total < 4 {
+        eprintln!("(nothing to compact)");
+        return Ok(());
+    }
+    let keep_from = total - 4;
+    let older: Vec<Message> = session.messages[..keep_from].to_vec();
+    let older_count = older.len();
+
+    let ctx = Context {
+        system_prompt: Some(
+            "Summarize this conversation into a compact context-preserving recap. \
+             Include files mentioned, decisions, and open todos."
+                .into(),
+        ),
+        messages: older,
+        tools: Vec::new(),
+    };
+
+    let mut stream = pi_ai::stream_simple(&app.model, &ctx, &StreamOptions::default()).await?;
+    let mut summary = String::new();
+    while let Some(event) = stream.next().await {
+        if let AssistantMessageEvent::TextDelta { delta, .. } = event? {
+            summary.push_str(&delta);
+        }
+    }
+
+    let recap = Message::user_text(format!("[compacted summary]\n{summary}"));
+    let mut new_messages = Vec::with_capacity(5);
+    new_messages.push(recap);
+    new_messages.extend(session.messages.drain(keep_from..));
+    session.replace_messages(new_messages);
+    crate::session::save(&app.config_dir, session)?;
+    eprintln!("compacted {older_count} messages");
+    Ok(())
 }
 
 fn truncate(s: &str, n: usize) -> String {
