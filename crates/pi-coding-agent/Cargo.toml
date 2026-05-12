@@ -1,0 +1,27 @@
+[package]
+name = "pi-coding-agent"
+description = "Interactive coding agent CLI (Rust port of @earendil-works/pi-coding-agent)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "pi"
+path = "src/main.rs"
+
+[dependencies]
+pi-ai = { path = "../pi-ai" }
+pi-agent = { path = "../pi-agent" }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+clap = { workspace = true }
+chrono = { workspace = true }
+futures = { workspace = true }
+dirs = { workspace = true }
