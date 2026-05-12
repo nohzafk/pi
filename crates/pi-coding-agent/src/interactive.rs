@@ -58,6 +58,7 @@ pub async fn run_interactive(
         let cfg = AgentConfig::new(app.model.clone(), system_prompt.clone())
             .with_tools(default_tools())
             .with_max_turns(app.max_turns)
+            .with_thinking(app.thinking_level)
             .with_permission(permission.clone());
         let (tx, mut rx) = mpsc::unbounded_channel();
         let user = Message::user_text(prompt);

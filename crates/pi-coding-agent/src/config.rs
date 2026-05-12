@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use pi_ai::Model;
+use pi_ai::{Model, ThinkingLevel};
 
 pub const APP_NAME: &str = "pi";
 
@@ -8,6 +8,7 @@ pub const APP_NAME: &str = "pi";
 pub struct AppConfig {
     pub model: Model,
     pub max_turns: u32,
+    pub thinking_level: ThinkingLevel,
     pub config_dir: PathBuf,
 }
 
@@ -19,8 +20,23 @@ impl Default for AppConfig {
         Self {
             model: default_model_from_env(),
             max_turns: 32,
+            thinking_level: ThinkingLevel::Off,
             config_dir,
         }
+    }
+}
+
+/// Parse a `thinking_level` string from the file config into a
+/// [`ThinkingLevel`]. Unknown values return `None`.
+pub fn parse_thinking_level(s: &str) -> Option<ThinkingLevel> {
+    match s.to_ascii_lowercase().as_str() {
+        "off" => Some(ThinkingLevel::Off),
+        "minimal" => Some(ThinkingLevel::Minimal),
+        "low" => Some(ThinkingLevel::Low),
+        "medium" => Some(ThinkingLevel::Medium),
+        "high" => Some(ThinkingLevel::High),
+        "xhigh" => Some(ThinkingLevel::Xhigh),
+        _ => None,
     }
 }
 

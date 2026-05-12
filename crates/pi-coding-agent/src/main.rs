@@ -1,6 +1,7 @@
 //! `pi` — interactive coding agent CLI.
 
 mod config;
+mod file_config;
 mod interactive;
 mod permission;
 mod print_mode;
@@ -12,7 +13,7 @@ use std::sync::Arc;
 
 use clap::{Parser, Subcommand};
 
-use crate::config::AppConfig;
+use crate::config::{parse_thinking_level, AppConfig};
 use crate::permission::{CliPermission, Mode};
 
 #[derive(Parser, Debug)]
@@ -27,8 +28,8 @@ struct Cli {
     model: Option<String>,
 
     /// Maximum agent turns before stopping.
-    #[arg(long, default_value_t = 32)]
-    max_turns: u32,
+    #[arg(long)]
+    max_turns: Option<u32>,
 
     /// Skip permission prompts (DANGEROUS — bash/write/edit run without confirm).
     #[arg(long)]
@@ -72,13 +73,34 @@ async fn main() -> anyhow::Result<()> {
         .with_writer(std::io::stderr)
         .init();
 
+    // Load `$XDG_CONFIG_HOME/pi/config.toml` (best-effort) before parsing
+    // argv so `PI_MODEL` can be seeded from the file before the `env`
+    // attribute on `Cli::model` resolves it.
+    let file_cfg = file_config::load();
+    if let Some(m) = &file_cfg.model {
+        if std::env::var_os("PI_MODEL").is_none() {
+            std::env::set_var("PI_MODEL", m);
+        }
+    }
+
     let cli = Cli::parse();
     if let Some(m) = &cli.model {
         std::env::set_var("PI_MODEL", m);
     }
 
+    // CLI flags / env win; the file fills holes.
+    let max_turns = cli.max_turns.or(file_cfg.max_turns).unwrap_or(32);
+    let thinking_level = file_cfg
+        .thinking_level
+        .as_deref()
+        .and_then(parse_thinking_level)
+        .unwrap_or_default();
+    let yolo = cli.yolo || file_cfg.yolo;
+    let json = cli.json || file_cfg.json;
+
     let app = AppConfig {
-        max_turns: cli.max_turns,
+        max_turns,
+        thinking_level,
         ..AppConfig::default()
     };
 
@@ -86,14 +108,14 @@ async fn main() -> anyhow::Result<()> {
         return run_sessions_cmd(&app, action);
     }
 
-    let permission: Arc<dyn pi_agent::PermissionPolicy> = if cli.yolo {
+    let permission: Arc<dyn pi_agent::PermissionPolicy> = if yolo {
         Arc::new(CliPermission::new(Mode::Yolo))
     } else {
         Arc::new(CliPermission::new(Mode::Interactive))
     };
 
     match (cli.prompt, cli.resume) {
-        (Some(p), _) => print_mode::run_print(&app, p, permission, cli.json).await,
+        (Some(p), _) => print_mode::run_print(&app, p, permission, json).await,
         (None, resume_id) => {
             let initial = match resume_id {
                 Some(id) => match session::load(&app.config_dir, &id) {
