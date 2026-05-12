@@ -39,8 +39,8 @@ The streaming LLM API and agent runtime are published on crates.io:
 
 ```toml
 [dependencies]
-pi-ai = "1.1"      # provider-agnostic streaming
-pi-agent = "1.1"   # agent loop, permission policy, built-in tools
+pi-ai = "1.2"      # provider-agnostic streaming
+pi-agent = "1.2"   # agent loop, permission policy, built-in tools
 ```
 
 Install the CLI via:

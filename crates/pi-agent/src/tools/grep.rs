@@ -46,14 +46,8 @@ impl AgentTool for GrepTool {
             .get("fixed_string")
             .and_then(|v| v.as_bool())
             .unwrap_or(false);
-        let before = args
-            .get("before")
-            .and_then(|v| v.as_u64())
-            .unwrap_or(0) as usize;
-        let after = args
-            .get("after")
-            .and_then(|v| v.as_u64())
-            .unwrap_or(0) as usize;
+        let before = args.get("before").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+        let after = args.get("after").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
         let max = args
             .get("max_matches")
             .and_then(|v| v.as_u64())
@@ -112,7 +106,14 @@ impl AgentTool for GrepTool {
                     let lineno = idx + 1;
                     let line = lines[*idx];
                     let sep = if match_set.contains(idx) { ':' } else { '-' };
-                    buf.push_str(&format!("{}{}{}{}{}\n", p.display(), sep, lineno, sep, line));
+                    buf.push_str(&format!(
+                        "{}{}{}{}{}\n",
+                        p.display(),
+                        sep,
+                        lineno,
+                        sep,
+                        line
+                    ));
                 }
                 hits += match_indices.len();
                 if hits >= max {

@@ -240,8 +240,9 @@ fn build_body(model: &Model, context: &Context, options: &StreamOptions) -> Valu
         if let Some(idx) = messages.iter().rposition(|m| m["role"] == "user") {
             if let Some(content) = messages[idx].get_mut("content") {
                 if let Some(arr) = content.as_array_mut() {
-                    if let Some(last_text_idx) =
-                        arr.iter().rposition(|b| b.get("type") == Some(&json!("text")))
+                    if let Some(last_text_idx) = arr
+                        .iter()
+                        .rposition(|b| b.get("type") == Some(&json!("text")))
                     {
                         arr[last_text_idx]["cache_control"] = cc.clone();
                     }

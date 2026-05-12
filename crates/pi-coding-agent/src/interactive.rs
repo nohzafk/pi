@@ -163,9 +163,7 @@ fn handle_slash(line: &str, app: &AppConfig, session: &mut Session) -> anyhow::R
                     total_cost += a.usage.cost.total;
                 }
             }
-            eprintln!(
-                "tokens: in={total_in} out={total_out}  cost: ${total_cost:.4}"
-            );
+            eprintln!("tokens: in={total_in} out={total_out}  cost: ${total_cost:.4}");
         }
         "/sessions" => {
             let summaries = crate::session::list(&app.config_dir)?;

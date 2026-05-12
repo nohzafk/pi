@@ -174,10 +174,7 @@ async fn bash_persists_cwd_across_calls() {
     let text = res.content[0].as_text().unwrap();
     assert!(text.contains("cwd"), "got: {text}");
 
-    let res = tool
-        .execute("2", json!({"command": "pwd"}))
-        .await
-        .unwrap();
+    let res = tool.execute("2", json!({"command": "pwd"})).await.unwrap();
     let text = res.content[0].as_text().unwrap();
     assert!(text.contains("/tmp"), "got: {text}");
 }

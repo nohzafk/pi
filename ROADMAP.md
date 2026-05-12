@@ -27,17 +27,16 @@
       `/resume`, `/session`, `/help`, `/model`, `/quit`, `/exit`.
 - [x] **Print-mode JSON output** (`-p --json`) — emit structured events for
       scripting. (delivered in 1.1.0)
-- [ ] **Config file** at `$XDG_CONFIG_HOME/pi/config.toml` (default model,
-      thinking level, tool allow-list). (1.x)
-- [ ] `/compact` (auto-summarize context to free room). (1.x)
+- [x] **Config file** at `$XDG_CONFIG_HOME/pi/config.toml` (delivered in 1.2.0).
+- [x] `/compact` (auto-summarize context to free room) — delivered in 1.2.0.
 
 ## Milestone 3 — Tool ecosystem ✅ (mostly delivered in 1.0.0)
 
 - [x] **Per-call permission prompts** with allow / allow-session / deny.
 - [x] **New tools**: `web_fetch`, `todo`.
-- [ ] **`bash` improvements**: streamed stdout/stderr, persisted cwd. (1.x)
-- [ ] **`edit` polish**: unified-diff preview before write. (1.x)
-- [ ] **`grep` upgrade**: regex mode, context lines. (1.x)
+- [x] **`bash` improvements**: streamed stdout/stderr, persisted cwd (1.2.0).
+- [x] **`edit` polish**: unified-diff preview before write (1.2.0).
+- [x] **`grep` upgrade**: regex mode, context lines (1.2.0).
 - [ ] **MCP (Model Context Protocol) client**. (1.x — major work)
 
 ## Milestone 4 — More providers ✅ (mostly delivered in 1.0.0)
@@ -47,10 +46,10 @@
 - [x] **OpenAI-compatible passthrough** — `Model::openai_compat(...)` or
       `StreamOptions::base_url` covers OpenRouter, Together, Groq, Cerebras,
       DeepSeek, Fireworks, xAI, etc.
-- [ ] **OpenAI Responses API** (`openai-responses`). (1.x)
+- [x] **OpenAI Responses API** (`openai-responses`) — delivered in 1.2.0.
 - [ ] **AWS Bedrock Converse Stream**. (1.x)
-- [ ] **Prompt cache markers** — Anthropic `cache_control`, OpenRouter
-      `cache_control`, OpenAI session-id headers. (1.x)
+- [x] **Prompt cache markers** — Anthropic `cache_control` (1.2.0). OpenRouter
+      and OpenAI session-id headers still pending.
 - [ ] **OAuth flows** for Copilot, Codex. (1.x)
 
 ## Milestone 5 — Reliability and polish ✅ (delivered in 1.0.0)
@@ -63,7 +62,7 @@
 - [x] **Structured tracing** with `#[instrument]` on the agent loop.
 - [x] **Typed error model** (`pi_agent::AgentError` enum).
 - [x] **Crate publishing** of `pi-ai` and `pi-agent` to crates.io.
-- [ ] **Documentation site** under `docs/` (mdBook). (1.x)
+- [x] **Documentation site** under `docs/` (mdBook) — delivered in 1.2.0.
 
 ## Beyond 1.0 — out of scope (no plans)
 
