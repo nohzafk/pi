@@ -2,6 +2,7 @@
 //! tool implementations directly against a tempfile-backed scratch dir.
 
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use pi_agent::tools::{bash, edit, glob_tool, grep, ls, read, write};
 use pi_agent::types::AgentTool;
@@ -115,11 +116,31 @@ async fn glob_finds_files() {
 
 #[tokio::test]
 async fn bash_runs_simple_command() {
-    let res = bash::BashTool
+    let tool = bash::BashTool::new();
+    let res = tool
         .execute("1", json!({"command": "echo hi-from-bash"}))
         .await
         .unwrap();
     let text = res.content[0].as_text().unwrap();
     assert!(text.contains("hi-from-bash"));
     assert!(text.contains("[exit 0]"));
+}
+
+#[tokio::test]
+async fn bash_persists_cwd_across_calls() {
+    let tool: Arc<bash::BashTool> = Arc::new(bash::BashTool::new());
+
+    let res = tool
+        .execute("1", json!({"command": "cd /tmp"}))
+        .await
+        .unwrap();
+    let text = res.content[0].as_text().unwrap();
+    assert!(text.contains("cwd"), "got: {text}");
+
+    let res = tool
+        .execute("2", json!({"command": "pwd"}))
+        .await
+        .unwrap();
+    let text = res.content[0].as_text().unwrap();
+    assert!(text.contains("/tmp"), "got: {text}");
 }
