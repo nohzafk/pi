@@ -96,6 +96,34 @@ async fn grep_finds_pattern() {
 }
 
 #[tokio::test]
+async fn grep_context_lines() {
+    let dir = scratch_dir();
+    let sub = dir.join("dir");
+    std::fs::create_dir_all(&sub).unwrap();
+    std::fs::write(sub.join("a.txt"), "alpha\nbeta needle gamma\ndelta\n").unwrap();
+
+    let res = grep::GrepTool
+        .execute(
+            "1",
+            json!({
+                "pattern": "needle",
+                "path": sub.to_string_lossy(),
+                "before": 1,
+                "after": 1,
+            }),
+        )
+        .await
+        .unwrap();
+    let text = res.content[0].as_text().unwrap();
+    assert!(text.contains("alpha"), "expected 'alpha' in: {text}");
+    assert!(
+        text.contains("beta needle gamma"),
+        "expected 'beta needle gamma' in: {text}"
+    );
+    assert!(text.contains("delta"), "expected 'delta' in: {text}");
+}
+
+#[tokio::test]
 async fn glob_finds_files() {
     let dir = scratch_dir();
     std::fs::write(dir.join("a.rs"), "").unwrap();

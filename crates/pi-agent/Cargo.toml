@@ -29,3 +29,4 @@ glob = { workspace = true }
 ignore = { workspace = true }
 shell-words = { workspace = true }
 reqwest = { workspace = true }
+regex = "1.10"
