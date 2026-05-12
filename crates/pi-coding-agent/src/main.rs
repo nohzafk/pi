@@ -34,6 +34,10 @@ struct Cli {
     #[arg(long)]
     yolo: bool,
 
+    /// In print mode (`-p`), emit JSON-lines on stdout instead of human text.
+    #[arg(long)]
+    json: bool,
+
     /// Resume a saved session by id.
     #[arg(long)]
     resume: Option<String>,
@@ -89,7 +93,7 @@ async fn main() -> anyhow::Result<()> {
     };
 
     match (cli.prompt, cli.resume) {
-        (Some(p), _) => print_mode::run_print(&app, p, permission).await,
+        (Some(p), _) => print_mode::run_print(&app, p, permission, cli.json).await,
         (None, resume_id) => {
             let initial = match resume_id {
                 Some(id) => match session::load(&app.config_dir, &id) {

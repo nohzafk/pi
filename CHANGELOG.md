@@ -4,6 +4,23 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] — 2026-05-12
+
+### Added
+
+- **`pi -p ... --json`** — emit JSON-lines on stdout instead of human text.
+  Stable event types: `agent_start`, `turn_start`, `turn_end`,
+  `user_message`, `assistant_message`, `text_delta`, `thinking_delta`,
+  `tool_start`, `tool_end`, `permission_denied`, `agent_end`. `agent_end`
+  is emitted by the CLI after the agent loop returns and includes
+  `stopped_at_turn_limit` and `message_count`.
+- Tests pinning the JSON-lines schema.
+
+### Notes
+
+- The `--json` contract follows semver from this release. Future additive
+  fields are allowed; renaming existing fields is a breaking change.
+
 ## [1.0.0] — 2026-05-12
 
 The first stable release of the Rust port. Everything in milestones 0.2.0

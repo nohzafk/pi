@@ -39,8 +39,14 @@ The streaming LLM API and agent runtime are published on crates.io:
 
 ```toml
 [dependencies]
-pi-ai = "1.0"      # provider-agnostic streaming
-pi-agent = "1.0"   # agent loop, permission policy, built-in tools
+pi-ai = "1.1"      # provider-agnostic streaming
+pi-agent = "1.1"   # agent loop, permission policy, built-in tools
+```
+
+Install the CLI via:
+
+```bash
+cargo install pi-coding-agent   # installs binary `pi`
 ```
 
 See the crate-level docs at
@@ -59,6 +65,9 @@ export ANTHROPIC_API_KEY=sk-ant-...
 
 # One-shot:
 ./target/release/pi -p "List the files in this directory and summarize them"
+
+# Same prompt, JSON-lines on stdout for scripting:
+./target/release/pi -p "..." --json
 
 # Interactive:
 ./target/release/pi

@@ -25,8 +25,8 @@
 - [x] **`AGENTS.md` / project-prompt loading**.
 - [x] Slash commands: `/clear` (as `/reset`), `/cost`, `/tools`, `/sessions`,
       `/resume`, `/session`, `/help`, `/model`, `/quit`, `/exit`.
-- [ ] **Print-mode JSON output** (`-p --json`) — emit structured events for
-      scripting. (1.x)
+- [x] **Print-mode JSON output** (`-p --json`) — emit structured events for
+      scripting. (delivered in 1.1.0)
 - [ ] **Config file** at `$XDG_CONFIG_HOME/pi/config.toml` (default model,
       thinking level, tool allow-list). (1.x)
 - [ ] `/compact` (auto-summarize context to free room). (1.x)
