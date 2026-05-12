@@ -14,7 +14,8 @@ pub mod types;
 
 pub use error::{Error, Result};
 pub use providers::{
-    anthropic::AnthropicProvider, google::GoogleProvider, openai::OpenAiProvider, Provider,
+    anthropic::AnthropicProvider, google::GoogleProvider, openai::OpenAiProvider,
+    openai_responses::OpenAiResponsesProvider, Provider,
 };
 pub use stream::AssistantMessageEventStream;
 pub use types::{
@@ -40,6 +41,11 @@ pub async fn stream_simple(
                 .await
         }
         "openai-completions" => OpenAiProvider::new().stream(model, context, options).await,
+        "openai-responses" => {
+            OpenAiResponsesProvider::new()
+                .stream(model, context, options)
+                .await
+        }
         "google-generative-ai" => GoogleProvider::new().stream(model, context, options).await,
         other => Err(Error::UnsupportedProvider(other.into())),
     }
