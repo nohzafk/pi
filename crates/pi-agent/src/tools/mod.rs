@@ -22,7 +22,7 @@ pub fn default_tools() -> Vec<Arc<dyn AgentTool>> {
         Arc::new(read::ReadTool),
         Arc::new(write::WriteTool),
         Arc::new(edit::EditTool),
-        Arc::new(bash::BashTool),
+        Arc::new(bash::BashTool::new()),
         Arc::new(ls::LsTool),
         Arc::new(grep::GrepTool),
         Arc::new(glob_tool::GlobTool),
