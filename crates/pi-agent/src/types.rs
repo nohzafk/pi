@@ -131,6 +131,11 @@ impl AgentConfig {
         self.thinking_level = level;
         self
     }
+
+    pub fn with_stream_options(mut self, o: StreamOptions) -> Self {
+        self.stream_options = o;
+        self
+    }
 }
 
 /// Events emitted by the agent loop, mirroring `AgentEvent` in TS.
