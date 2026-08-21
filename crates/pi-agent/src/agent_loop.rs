@@ -234,6 +234,8 @@ pub async fn run_agent_with_history(
             messages.push(Message::ToolResult(tr));
         }
         emit(&events, AgentEvent::TurnEnd);
+        // 只读观察 —— 返回值被丢弃，所以插件的错误传播不出去。
+        config.loop_policy.observer.observe(turn, &messages).await;
         if any_terminate {
             break;
         }

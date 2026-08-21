@@ -90,12 +90,33 @@ impl StopPolicy for TurnLimitPolicy {
     }
 }
 
-/// 三个决策点打包。放进 AgentConfig。
+/// 观察一轮结束后的状态。**只读** —— 拿到的是拷贝，改它不影响循环。
+///
+/// 与前三个点的区别：那三个的返回值会进入循环，所以插件的错误会传播；
+/// 这个的返回值被丢弃，所以给出完整 transcript 是安全的。session
+/// 持久化、用量统计、审计都靠它。
+#[async_trait]
+pub trait Observer: Send + Sync {
+    /// 每轮结束时调用。turn 是刚结束的轮次。
+    async fn observe(&self, turn: u32, messages: &[Message]);
+}
+
+/// 什么都不做。
+pub struct NoObserver;
+
+#[async_trait]
+impl Observer for NoObserver {
+    async fn observe(&self, _turn: u32, _messages: &[Message]) {}
+}
+
+/// 四个决策点打包。放进 AgentConfig。
 #[derive(Clone)]
 pub struct LoopPolicy {
     pub assembler: Arc<dyn ContextAssembler>,
     pub processor: Arc<dyn ResultProcessor>,
     pub stop: Arc<dyn StopPolicy>,
+    /// 只读观察，返回值被丢弃。
+    pub observer: Arc<dyn Observer>,
 }
 
 impl LoopPolicy {
@@ -105,6 +126,7 @@ impl LoopPolicy {
             assembler: Arc::new(PassThroughAssembler),
             processor: Arc::new(PassThroughProcessor),
             stop: Arc::new(TurnLimitPolicy { max_turns }),
+            observer: Arc::new(NoObserver),
         }
     }
 }
