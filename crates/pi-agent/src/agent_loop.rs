@@ -57,13 +57,26 @@ pub async fn run_agent_with_history(
     let mut turn: u32 = 0;
     let mut stopped_at_turn_limit = false;
 
-    'outer: while turn < config.max_turns {
+    let mut stop_reason: Option<String> = None;
+
+    'outer: loop {
+        // 停机判定 —— 可替换（D9）。默认只看轮次上限，与之前等价。
+        if let Some(r) = config.loop_policy.stop.should_stop(turn, &messages).await {
+            stop_reason = Some(r);
+            break 'outer;
+        }
         turn += 1;
         emit(&events, AgentEvent::TurnStart);
 
+        // 上下文装配 —— 可替换（D9）。默认原样传递。
+        let assembled = config
+            .loop_policy
+            .assembler
+            .assemble(turn, &config.system_prompt, &messages)
+            .await;
         let ctx = Context {
-            system_prompt: Some(config.system_prompt.clone()),
-            messages: messages.clone(),
+            system_prompt: Some(assembled.system_prompt),
+            messages: assembled.messages,
             tools: tool_defs.clone(),
         };
 
@@ -205,6 +218,12 @@ pub async fn run_agent_with_history(
                     content: content.clone(),
                 },
             );
+            // 工具结果加工 —— 可替换（D9）。默认原样传递。
+            let (content, is_error) = config
+                .loop_policy
+                .processor
+                .process(&name, content, is_error)
+                .await;
             let tr = ToolResultMessage {
                 tool_call_id: id,
                 tool_name: name,
@@ -220,7 +239,13 @@ pub async fn run_agent_with_history(
         }
     }
 
-    if turn >= config.max_turns {
+    // 保持既有语义：只有"轮次上限"这一种停法算 stopped_at_turn_limit。
+    // 插件给的别的停机理由不算 —— 那是它自己的决定，不是被截断。
+    if stop_reason
+        .as_deref()
+        .map(|r| r.starts_with("turn limit"))
+        .unwrap_or(false)
+    {
         stopped_at_turn_limit = true;
     }
 

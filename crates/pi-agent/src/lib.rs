@@ -8,6 +8,7 @@
 
 pub mod agent_loop;
 pub mod error;
+pub mod policy;
 pub mod tools;
 pub mod types;
 

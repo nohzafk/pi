@@ -87,6 +87,8 @@ pub struct AgentConfig {
     pub tools: Vec<Arc<dyn AgentTool>>,
     pub system_prompt: String,
     pub permission: Arc<dyn PermissionPolicy>,
+    /// 循环里三个可替换的决策点。默认与拆分前行为等价。
+    pub loop_policy: crate::policy::LoopPolicy,
 }
 
 impl AgentConfig {
@@ -99,6 +101,7 @@ impl AgentConfig {
             tools: Vec::new(),
             system_prompt: system_prompt.into(),
             permission: Arc::new(AllowAllPolicy),
+            loop_policy: crate::policy::LoopPolicy::default_with_turns(32),
         }
     }
 
@@ -109,6 +112,13 @@ impl AgentConfig {
 
     pub fn with_max_turns(mut self, n: u32) -> Self {
         self.max_turns = n;
+        // stop policy 也要跟上，否则两处上限不一致
+        self.loop_policy.stop = Arc::new(crate::policy::TurnLimitPolicy { max_turns: n });
+        self
+    }
+
+    pub fn with_loop_policy(mut self, p: crate::policy::LoopPolicy) -> Self {
+        self.loop_policy = p;
         self
     }
 
