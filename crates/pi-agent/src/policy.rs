@@ -81,7 +81,7 @@ pub struct TurnLimitPolicy {
 
 #[async_trait]
 impl StopPolicy for TurnLimitPolicy {
-    async fn should_stop(&self, turn: u32, _messages: &[Message]) -> Option<String> {
+    async fn should_stop(&self, turn: u32, _m: &[Message]) -> Option<String> {
         if turn >= self.max_turns {
             Some(format!("turn limit {} reached", self.max_turns))
         } else {
@@ -109,6 +109,24 @@ impl Observer for NoObserver {
     async fn observe(&self, _turn: u32, _messages: &[Message]) {}
 }
 
+/// 默认：永不主动停。
+///
+/// 这是上游 pi 的行为。它的 agent-loop.ts 是 `while (true)`，退出条件
+/// 只有一个 —— 这一轮模型没有再要求调用工具。codex 同样：`loop {}`
+/// 直到输入队列为空。两者都不数轮。
+///
+/// `max_turns = 32` 是这个 Rust port 移植时加的，会在长任务做到一半时
+/// 把 agent 截断。想要上限的调用方自己 `with_max_turns`，或者装一个
+/// 插件策略 —— 那是策略，不该是默认。
+pub struct NeverStop;
+
+#[async_trait]
+impl StopPolicy for NeverStop {
+    async fn should_stop(&self, _turn: u32, _messages: &[Message]) -> Option<String> {
+        None
+    }
+}
+
 /// 四个决策点打包。放进 AgentConfig。
 #[derive(Clone)]
 pub struct LoopPolicy {
@@ -121,11 +139,13 @@ pub struct LoopPolicy {
 
 impl LoopPolicy {
     /// 默认策略 —— 与拆分之前的行为逐字节相同。
-    pub fn default_with_turns(max_turns: u32) -> Self {
+    pub fn default_with_turns(_max_turns: u32) -> Self {
         Self {
             assembler: Arc::new(PassThroughAssembler),
             processor: Arc::new(PassThroughProcessor),
-            stop: Arc::new(TurnLimitPolicy { max_turns }),
+            // 不用 max_turns —— 见 NeverStop 的说明。参数保留是为了
+            // 让想要轮数上限的调用方还能自己 with_max_turns。
+            stop: Arc::new(NeverStop),
             observer: Arc::new(NoObserver),
         }
     }

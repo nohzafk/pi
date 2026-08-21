@@ -110,9 +110,13 @@ impl AgentConfig {
         self
     }
 
+    /// 设一个轮数上限。**默认没有上限** —— 默认策略是连续失败计数
+    /// （见 policy::ConsecutiveFailures），因为上游 pi 和 codex 都不数轮，
+    /// 而数轮会在长任务做到一半时把它截断。
+    ///
+    /// 调这个方法才装上 TurnLimitPolicy，也就是明确要一个硬顶。
     pub fn with_max_turns(mut self, n: u32) -> Self {
         self.max_turns = n;
-        // stop policy 也要跟上，否则两处上限不一致
         self.loop_policy.stop = Arc::new(crate::policy::TurnLimitPolicy { max_turns: n });
         self
     }
