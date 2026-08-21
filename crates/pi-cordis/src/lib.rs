@@ -15,9 +15,11 @@
 
 pub mod bridge;
 pub mod config;
+pub mod loop_policy;
 pub mod runtime;
 
 pub use config::{CordisPermission, GovernedConfig, PluginTool};
+pub use loop_policy::plugin_loop_policy;
 pub use runtime::CordisRuntime;
 
 use std::sync::Arc;
@@ -46,7 +48,13 @@ pub fn boot(
 }
 
 /// 读取当前由 Cordis 决定的 agent 配置。插件配置变化后重新调用。
-pub fn governed_config(system_prompt_fallback: &str) -> Result<GovernedConfig, String> {
+///
+/// `max_turns` 是停机的兜底 —— 插件不表态时仍受它约束，不能因为
+/// 插件沉默就变成无限循环。
+pub fn governed_config(
+    system_prompt_fallback: &str,
+    max_turns: u32,
+) -> Result<GovernedConfig, String> {
     // 工具清单：插件在 :agent-tools 下登记的东西
     let listing = CordisRuntime::eval(
         r#"(elle/epoch 12)
@@ -105,5 +113,6 @@ pub fn governed_config(system_prompt_fallback: &str) -> Result<GovernedConfig, S
         tools,
         permission: Arc::new(CordisPermission::new(denied_classes)),
         system_prompt,
+        loop_policy: plugin_loop_policy(max_turns),
     })
 }

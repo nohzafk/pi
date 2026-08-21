@@ -99,10 +99,12 @@ impl PermissionPolicy for CordisPermission {
     }
 }
 
-/// Cordis 决定的 agent 配置。由 `CordisRuntime::agent_config()` 产出，
+/// Cordis 决定的 agent 配置。由 `governed_config()` 产出，
 /// 每次插件配置变化后重新读取。
 pub struct GovernedConfig {
     pub tools: Vec<Arc<dyn AgentTool>>,
     pub permission: Arc<dyn PermissionPolicy>,
     pub system_prompt: String,
+    /// 循环的三个决策点。插件没登记处理函数的那个用默认实现。
+    pub loop_policy: pi_agent::policy::LoopPolicy,
 }

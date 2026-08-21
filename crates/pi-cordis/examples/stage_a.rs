@@ -47,7 +47,7 @@ async fn main() -> Result<(), String> {
     }
 
     // ── 2. 读取由 Cordis 决定的 agent 配置 ────────────────────
-    let cfg = pi_cordis::governed_config("You are a coding agent.")?;
+    let cfg = pi_cordis::governed_config("You are a coding agent.", 32)?;
     println!("[test] tools from cordis: {}", cfg.tools.len());
     for t in &cfg.tools {
         println!("[test]   - {} : {}", t.name(), t.description());
@@ -103,7 +103,7 @@ async fn main() -> Result<(), String> {
     println!("[test] after unload: {after}");
     assert!(after.contains("gone"), "the inverse removed the registration");
 
-    let cfg2 = pi_cordis::governed_config("You are a coding agent.")?;
+    let cfg2 = pi_cordis::governed_config("You are a coding agent.", 32)?;
     println!("[test] tools after unload: {}", cfg2.tools.len());
     assert_eq!(cfg2.tools.len(), 0, "agent's toolset shrank");
 
