@@ -17,6 +17,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use pi_agent::policy::{
+    NoObserver,
     Assembled, ContextAssembler, LoopPolicy, PassThroughAssembler, PassThroughProcessor,
     ResultProcessor, StopPolicy, TurnLimitPolicy,
 };
@@ -191,6 +192,7 @@ async fn main() -> Result<(), String> {
                 calls: proc_calls.clone(),
             }),
             stop: Arc::new(TurnLimitPolicy { max_turns: 4 }),
+            observer: Arc::new(NoObserver),
         });
 
     let run2 = run_agent(
@@ -223,6 +225,7 @@ async fn main() -> Result<(), String> {
             assembler: Arc::new(InjectingAssembler),
             processor: Arc::new(PassThroughProcessor),
             stop: Arc::new(TurnLimitPolicy { max_turns: 2 }),
+            observer: Arc::new(NoObserver),
         });
 
     let run3 = run_agent(&cfg3, Message::user_text("Say hello."), None)
@@ -249,6 +252,7 @@ async fn main() -> Result<(), String> {
             processor: Arc::new(PassThroughProcessor),
             // 0 -> 一轮都不跑
             stop: Arc::new(StopAfter { n: 0 }),
+            observer: Arc::new(NoObserver),
         });
 
     let run4 = run_agent(&cfg4, Message::user_text("What is the secret code?"), None)

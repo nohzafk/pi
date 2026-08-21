@@ -14,6 +14,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use pi_agent::policy::{
+    NoObserver,
     Assembled, ContextAssembler, LoopPolicy, PassThroughProcessor, StopPolicy, TurnLimitPolicy,
 };
 use pi_agent::{run_agent, AgentConfig};
@@ -85,6 +86,7 @@ async fn main() -> Result<(), String> {
             calls: stop_calls.clone(),
             stop_at: 0,
         }),
+            observer: Arc::new(NoObserver),
     };
 
     let cfg = AgentConfig::new(dummy_model(), "You are a test agent.")
@@ -126,6 +128,7 @@ async fn main() -> Result<(), String> {
             calls: stop_calls2.clone(),
             stop_at: 5,
         }),
+            observer: Arc::new(NoObserver),
     };
     let cfg2 = AgentConfig::new(dummy_model(), "You are a test agent.")
         .with_loop_policy(policy2);

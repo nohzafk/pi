@@ -145,6 +145,8 @@ pub async fn run_agent_with_history(
 
         if tool_calls.is_empty() || stop != StopReason::ToolUse {
             emit(&events, AgentEvent::TurnEnd);
+            // 一轮完整对话结束，也要观察 —— 这是最常见的形态
+            config.loop_policy.observer.observe(turn, &messages).await;
             break 'outer;
         }
 
