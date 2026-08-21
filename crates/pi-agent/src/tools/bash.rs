@@ -62,23 +62,29 @@ impl AgentTool for BashTool {
             .unwrap_or(120_000);
 
         let trimmed = cmd.trim();
-        if let Some(rest) = trimmed.strip_prefix("cd ") {
-            let target = rest.trim();
-            if !target.is_empty() {
-                let mut guard = self.cwd.lock().await;
-                let candidate = PathBuf::from(target);
-                let joined = if candidate.is_absolute() {
-                    candidate
-                } else {
-                    guard.join(&candidate)
-                };
-                let resolved = joined.canonicalize().unwrap_or(joined);
-                *guard = resolved.clone();
-                return Ok(AgentToolResult::text(format!(
-                    "(cwd → {})",
-                    resolved.display()
-                )));
+        // 只有整条命令就是一个 cd 时才自己处理。带 && ; | 之类的交给
+        // bash —— 我们没资格解析 shell 语法，而猜错的代价是把整条命令
+        // 当成路径名，之后每次 spawn 都失败（cwd 是持久状态）。
+        if let Some(target) = looks_like_bare_cd(trimmed) {
+            let mut guard = self.cwd.lock().await;
+            let candidate = PathBuf::from(target);
+            let joined = if candidate.is_absolute() {
+                candidate
+            } else {
+                guard.join(&candidate)
+            };
+            // 不存在就报错。静默接受会把"路径错了"变成"之后全炸"。
+            let resolved = joined
+                .canonicalize()
+                .map_err(|e| format!("cd {}: {e}", joined.display()))?;
+            if !resolved.is_dir() {
+                return Err(format!("cd {}: not a directory", resolved.display()));
             }
+            *guard = resolved.clone();
+            return Ok(AgentToolResult::text(format!(
+                "(cwd → {})",
+                resolved.display()
+            )));
         }
 
         let cwd_snapshot = { self.cwd.lock().await.clone() };
@@ -165,5 +171,53 @@ impl AgentTool for BashTool {
         }
         out.push_str(&format!("[exit {code}]"));
         Ok(AgentToolResult::text(out))
+    }
+}
+
+/// 整条命令是不是一个单纯的 `cd <path>`。
+///
+/// 只要出现 shell 的控制字符就返回 None —— 交给真正的 bash 去跑。
+/// 这个判断宁可保守：漏判只是少一次 cwd 记忆，误判会毁掉整个会话的
+/// shell（把整条命令当成目录名，之后每次 spawn 都 ENOENT）。
+fn looks_like_bare_cd(cmd: &str) -> Option<&str> {
+    let rest = cmd.strip_prefix("cd ")?.trim();
+    if rest.is_empty() {
+        return None;
+    }
+    // shell 控制字符：命令不止一个 cd
+    const CONTROL: &[&str] = &["&&", "||", ";", "|", "&", "\n", "$(", "`", ">", "<"];
+    if CONTROL.iter().any(|c| rest.contains(c)) {
+        return None;
+    }
+    Some(rest)
+}
+
+#[cfg(test)]
+mod cd_tests {
+    use super::looks_like_bare_cd;
+
+    #[test]
+    fn bare_cd_is_recognised() {
+        assert_eq!(looks_like_bare_cd("cd /tmp"), Some("/tmp"));
+        assert_eq!(looks_like_bare_cd("cd  src/lib  "), Some("src/lib"));
+    }
+
+    #[test]
+    fn compound_commands_go_to_bash() {
+        // 这个正是那个 bug 的形状
+        assert_eq!(
+            looks_like_bare_cd("cd cordis-pi && cargo test render 2>&1 | tail -30"),
+            None
+        );
+        assert_eq!(looks_like_bare_cd("cd /tmp; ls"), None);
+        assert_eq!(looks_like_bare_cd("cd $(pwd)"), None);
+        assert_eq!(looks_like_bare_cd("cd a > b"), None);
+    }
+
+    #[test]
+    fn not_a_cd_at_all() {
+        assert_eq!(looks_like_bare_cd("ls -la"), None);
+        assert_eq!(looks_like_bare_cd("cdk deploy"), None);
+        assert_eq!(looks_like_bare_cd("cd"), None);
     }
 }
