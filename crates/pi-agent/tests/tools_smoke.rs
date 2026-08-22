@@ -164,6 +164,52 @@ async fn bash_runs_simple_command() {
 }
 
 #[tokio::test]
+async fn bash_truncates_long_output_and_keeps_the_full_text() {
+    let tool = bash::BashTool::new();
+    // 100k lines is well past both limits.
+    let res = tool
+        .execute("1", json!({"command": "seq 1 100000"}))
+        .await
+        .unwrap();
+    let text = res.content[0].as_text().unwrap();
+
+    // The tail survives, the head is gone.
+    assert!(text.contains("100000"), "tail missing");
+    assert!(!text.contains("\n1\n"), "head should be dropped");
+    assert!(text.contains("[exit 0]"));
+
+    // The footer says what happened and where the rest is.
+    assert!(text.contains("Showing lines"), "no truncation footer: {}", &text[..200.min(text.len())]);
+    assert!(text.contains("Full output:"));
+
+    // details carries the same facts in structured form.
+    let d = &res.details;
+    assert_eq!(d["truncation"]["truncated"], true);
+    assert_eq!(d["truncation"]["totalLines"], 100_000);
+    let path = d["fullOutputPath"].as_str().expect("fullOutputPath");
+
+    // The dump really holds everything, so a follow-up read can reach line 1.
+    let full = std::fs::read_to_string(path).unwrap();
+    assert!(full.starts_with("1\n"), "dump lost the head");
+    assert!(full.trim_end().ends_with("100000"), "dump lost the tail");
+    assert_eq!(full.lines().count(), 100_000);
+    let _ = std::fs::remove_file(path);
+}
+
+#[tokio::test]
+async fn bash_leaves_short_output_alone() {
+    let tool = bash::BashTool::new();
+    let res = tool
+        .execute("1", json!({"command": "seq 1 5"}))
+        .await
+        .unwrap();
+    let text = res.content[0].as_text().unwrap();
+    assert!(text.starts_with("1\n"), "got: {text}");
+    assert!(!text.contains("Showing lines"), "should not truncate");
+    assert!(res.details.is_null(), "no details when nothing was cut");
+}
+
+#[tokio::test]
 async fn bash_persists_cwd_across_calls() {
     let tool: Arc<bash::BashTool> = Arc::new(bash::BashTool::new());
 
