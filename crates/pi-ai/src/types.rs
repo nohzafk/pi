@@ -93,7 +93,7 @@ pub struct Cost {
 }
 
 /// Per-million-token USD pricing for a model.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct ModelPricing {
     #[serde(default)]
     pub input: f64,
@@ -218,7 +218,7 @@ pub struct StreamOptions {
 }
 
 /// Model descriptor — analogous to the Model<TApi> interface in pi-ai.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Model {
     pub id: String,
     pub name: String,
