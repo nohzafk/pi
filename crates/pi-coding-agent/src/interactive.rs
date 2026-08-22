@@ -88,10 +88,14 @@ pub async fn run_interactive(
                     let _ = writeln!(stdout);
                 }
                 AgentEvent::ToolExecutionStart {
-                    tool_name, args, ..
-                } => {
-                    eprintln!("  → {}({})", tool_name, args);
-                }
+                    tool_name,
+                    args,
+                    title,
+                    ..
+                } => match title {
+                    Some(t) => eprintln!("  → {tool_name}: {t}"),
+                    None => eprintln!("  → {}({})", tool_name, args),
+                },
                 AgentEvent::ToolExecutionEnd {
                     tool_name,
                     is_error,

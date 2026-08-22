@@ -37,11 +37,13 @@ fn enc(ev: AgentEvent) -> serde_json::Value {
             tool_call_id,
             tool_name,
             args,
+            title,
         } => json!({
             "type": "tool_start",
             "tool_call_id": tool_call_id,
             "tool_name": tool_name,
             "args": args,
+            "title": title,
         }),
         AgentEvent::ToolExecutionEnd {
             tool_call_id,
@@ -79,8 +81,10 @@ fn tool_start_shape() {
         tool_call_id: "call_1".into(),
         tool_name: "read".into(),
         args: json!({"path": "/tmp/x"}),
+        title: Some("read the temp file".into()),
     });
     assert_eq!(v["type"], "tool_start");
+    assert_eq!(v["title"], "read the temp file");
     assert_eq!(v["tool_call_id"], "call_1");
     assert_eq!(v["tool_name"], "read");
     assert_eq!(v["args"]["path"], "/tmp/x");

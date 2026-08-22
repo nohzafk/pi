@@ -69,11 +69,77 @@ pub trait AgentTool: Send + Sync {
     async fn execute(&self, tool_call_id: &str, args: Value) -> Result<AgentToolResult, String>;
 }
 
+/// The parameter every tool carries for the UI, injected by [`tool_def`].
+///
+/// The model states its intent in the same call that does the work. A
+/// summariser downstream cannot recover that: it sees `sed -n '60,130p' x.rs`
+/// and can say "read part of a file", but not *why* those lines. Intent only
+/// exists in the context of the model that made the call.
+pub const TITLE_PARAM: &str = "title";
+
+const TITLE_DESCRIPTION: &str = "A short phrase, 5 to 10 words, that says what \
+this call is for. It is shown to the user in place of the raw arguments while \
+the tool runs. Write it in the language the user writes in. Describe the intent, \
+not the syntax: \"check why the build fails\", not \"run cargo build\".";
+
+/// Add the `title` parameter to a tool's own schema.
+///
+/// Injected here rather than in each tool so every tool gets it, including
+/// ones added later, and so no tool has to know the UI exists.
+fn with_title_param(mut params: Value) -> Value {
+    let Some(obj) = params.as_object_mut() else {
+        return params;
+    };
+    let props = obj
+        .entry("properties")
+        .or_insert_with(|| Value::Object(Default::default()));
+    if let Some(props) = props.as_object_mut() {
+        // A tool that already defines `title` keeps its own meaning.
+        if !props.contains_key(TITLE_PARAM) {
+            props.insert(
+                TITLE_PARAM.to_string(),
+                serde_json::json!({
+                    "type": "string",
+                    "description": TITLE_DESCRIPTION,
+                }),
+            );
+        }
+    }
+    // Required, not optional. An optional field gets dropped when the model is
+    // in a hurry, and then the UI has a blank line to render.
+    match obj.get_mut("required") {
+        Some(Value::Array(req)) => {
+            if !req.iter().any(|v| v.as_str() == Some(TITLE_PARAM)) {
+                req.push(Value::String(TITLE_PARAM.to_string()));
+            }
+        }
+        _ => {
+            obj.insert(
+                "required".to_string(),
+                Value::Array(vec![Value::String(TITLE_PARAM.to_string())]),
+            );
+        }
+    }
+    params
+}
+
+/// Take `title` out of the arguments before the tool runs.
+///
+/// Tools never see it: it is for the UI, and a tool that validates its input
+/// strictly would reject an argument it does not declare.
+pub fn split_title(args: &mut Value) -> Option<String> {
+    let obj = args.as_object_mut()?;
+    match obj.remove(TITLE_PARAM) {
+        Some(Value::String(s)) if !s.trim().is_empty() => Some(s),
+        _ => None,
+    }
+}
+
 pub fn tool_def(t: &dyn AgentTool) -> Tool {
     Tool {
         name: t.name().to_string(),
         description: t.description().to_string(),
-        parameters: t.parameters(),
+        parameters: with_title_param(t.parameters()),
     }
 }
 
@@ -168,7 +234,11 @@ pub enum AgentEvent {
     ToolExecutionStart {
         tool_call_id: String,
         tool_name: String,
+        /// Arguments as the tool receives them: `title` is already removed.
         args: Value,
+        /// What the model said this call is for. `None` if it omitted the
+        /// field despite the schema requiring it.
+        title: Option<String>,
     },
     ToolExecutionEnd {
         tool_call_id: String,
@@ -184,4 +254,92 @@ pub enum AgentEvent {
         tool_name: String,
         reason: String,
     },
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct Dummy {
+        params: Value,
+    }
+
+    #[async_trait]
+    impl AgentTool for Dummy {
+        fn name(&self) -> &str {
+            "dummy"
+        }
+        fn description(&self) -> &str {
+            "test tool"
+        }
+        fn parameters(&self) -> Value {
+            self.params.clone()
+        }
+        async fn execute(&self, _id: &str, _args: Value) -> Result<AgentToolResult, String> {
+            Ok(AgentToolResult::text("ok"))
+        }
+    }
+
+    fn def_of(params: Value) -> Tool {
+        tool_def(&Dummy { params })
+    }
+
+    #[test]
+    fn title_is_injected_and_required() {
+        let d = def_of(serde_json::json!({
+            "type": "object",
+            "properties": {"path": {"type": "string"}},
+            "required": ["path"],
+        }));
+        let props = &d.parameters["properties"];
+        assert_eq!(props[TITLE_PARAM]["type"], "string");
+        // The tool's own parameters survive.
+        assert_eq!(props["path"]["type"], "string");
+
+        let req = d.parameters["required"].as_array().unwrap();
+        assert!(req.iter().any(|v| v == "path"));
+        assert!(req.iter().any(|v| v == TITLE_PARAM), "title must be required");
+    }
+
+    #[test]
+    fn title_is_added_when_there_is_no_required_list() {
+        let d = def_of(serde_json::json!({
+            "type": "object",
+            "properties": {},
+        }));
+        assert_eq!(d.parameters["required"], serde_json::json!([TITLE_PARAM]));
+    }
+
+    #[test]
+    fn a_tool_keeps_its_own_title_parameter() {
+        let d = def_of(serde_json::json!({
+            "type": "object",
+            "properties": {"title": {"type": "integer"}},
+        }));
+        // Not overwritten: the tool meant something else by that name.
+        assert_eq!(d.parameters["properties"]["title"]["type"], "integer");
+    }
+
+    #[test]
+    fn split_title_takes_the_field_out() {
+        let mut args = serde_json::json!({"command": "ls", "title": "list the files"});
+        assert_eq!(split_title(&mut args).as_deref(), Some("list the files"));
+        // The tool must not see it.
+        assert_eq!(args, serde_json::json!({"command": "ls"}));
+    }
+
+    #[test]
+    fn split_title_ignores_junk() {
+        // Missing, blank, and wrong-typed all mean "no title" rather than an
+        // error: a bad title must never fail the tool call.
+        let mut a = serde_json::json!({"command": "ls"});
+        assert!(split_title(&mut a).is_none());
+
+        let mut b = serde_json::json!({"title": "   "});
+        assert!(split_title(&mut b).is_none());
+
+        let mut c = serde_json::json!({"title": 42});
+        assert!(split_title(&mut c).is_none());
+        assert!(c.get("title").is_none(), "junk is still removed");
+    }
 }

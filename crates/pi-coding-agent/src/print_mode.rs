@@ -65,10 +65,14 @@ async fn run_human(rx: &mut mpsc::UnboundedReceiver<AgentEvent>) {
                 let _ = writeln!(stdout);
             }
             AgentEvent::ToolExecutionStart {
-                tool_name, args, ..
-            } => {
-                eprintln!("→ {tool_name}({args})");
-            }
+                tool_name,
+                args,
+                title,
+                ..
+            } => match title {
+                Some(t) => eprintln!("→ {tool_name}: {t}"),
+                None => eprintln!("→ {tool_name}({args})"),
+            },
             AgentEvent::ToolExecutionEnd {
                 tool_name,
                 is_error,
@@ -122,11 +126,13 @@ fn event_to_json(ev: &AgentEvent) -> serde_json::Value {
             tool_call_id,
             tool_name,
             args,
+            title,
         } => json!({
             "type": "tool_start",
             "tool_call_id": tool_call_id,
             "tool_name": tool_name,
             "args": args,
+            "title": title,
         }),
         AgentEvent::ToolExecutionEnd {
             tool_call_id,

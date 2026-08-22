@@ -151,7 +151,11 @@ pub async fn run_agent_with_history(
         }
 
         let mut any_terminate = !tool_calls.is_empty();
-        for (id, name, args) in tool_calls {
+        for (id, name, mut args) in tool_calls {
+            // Pull the UI's `title` out before anything else looks at the
+            // arguments — the permission prompt should show what the tool will
+            // actually do, not a field meant for the display.
+            let title = crate::types::split_title(&mut args);
             // Permission gate (only for tools that require it, and only once
             // per name per run if the user said "allow session").
             let tool_obj = tool_index.get(&name);
@@ -191,6 +195,7 @@ pub async fn run_agent_with_history(
                     tool_call_id: id.clone(),
                     tool_name: name.clone(),
                     args: args.clone(),
+                    title,
                 },
             );
             let (content, is_error, terminate, details) = match tool_obj {
