@@ -48,12 +48,14 @@ fn enc(ev: AgentEvent) -> serde_json::Value {
             tool_name,
             is_error,
             content,
+            details,
         } => json!({
             "type": "tool_end",
             "tool_call_id": tool_call_id,
             "tool_name": tool_name,
             "is_error": is_error,
             "content": content,
+            "details": details,
         }),
         AgentEvent::PermissionDenied { tool_name, reason } => json!({
             "type": "permission_denied",
@@ -91,10 +93,27 @@ fn tool_end_shape() {
         tool_name: "bash".into(),
         is_error: false,
         content: vec![Content::text("ok")],
+        details: serde_json::Value::Null,
     });
     assert_eq!(v["type"], "tool_end");
     assert_eq!(v["is_error"], false);
     assert_eq!(v["content"][0]["text"], "ok");
+}
+
+#[test]
+fn tool_end_carries_truncation_details() {
+    let v = enc(AgentEvent::ToolExecutionEnd {
+        tool_call_id: "call_3".into(),
+        tool_name: "bash".into(),
+        is_error: false,
+        content: vec![Content::text("tail")],
+        details: json!({
+            "truncation": {"truncated": true, "totalLines": 900},
+            "fullOutputPath": "/tmp/pi-bash-1.log",
+        }),
+    });
+    assert_eq!(v["details"]["truncation"]["truncated"], true);
+    assert_eq!(v["details"]["fullOutputPath"], "/tmp/pi-bash-1.log");
 }
 
 #[test]

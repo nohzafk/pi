@@ -9,6 +9,9 @@ use tokio::process::Command;
 use tokio::sync::{mpsc, Mutex};
 use tokio::time::{timeout, Duration};
 
+use crate::tools::truncate::{
+    dump_full_output, truncate_tail, DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES,
+};
 use crate::types::{AgentTool, AgentToolResult};
 
 pub struct BashTool {
@@ -39,7 +42,8 @@ impl AgentTool for BashTool {
         true
     }
     fn description(&self) -> &str {
-        "Run a shell command via `bash -lc <cmd>`. Returns combined stdout/stderr and exit code, and `cd <path>` to change persistent cwd."
+        "Run a shell command via `bash -lc <cmd>`. Returns combined stdout/stderr and exit code, and `cd <path>` to change persistent cwd. \
+Output keeps the last 2000 lines or 50KB, whichever limit is hit first. When output is truncated the full text is written to a temp file and the path is reported; read or grep that file to see the dropped part."
     }
     fn parameters(&self) -> Value {
         json!({
@@ -165,12 +169,59 @@ impl AgentTool for BashTool {
         };
 
         let code = status.code().unwrap_or(-1);
-        let mut out = combined.lock().await.clone();
+        let full = combined.lock().await.clone();
+
+        // Truncate what the model sees, but keep the whole thing on disk so
+        // the dropped part stays reachable. The footer names the file.
+        let t = truncate_tail(&full, DEFAULT_MAX_LINES, DEFAULT_MAX_BYTES);
+        let dump = if t.truncated() {
+            dump_full_output(&full, "bash")
+        } else {
+            None
+        };
+
+        let mut out = t.content.clone();
         if !out.is_empty() && !out.ends_with('\n') {
             out.push('\n');
         }
+        if t.truncated() {
+            let where_ = dump
+                .as_ref()
+                .map(|p| format!(" Full output: {}", p.display()))
+                .unwrap_or_default();
+            out.push_str(&format!(
+                "[Showing lines {}-{} of {}.{}]\n",
+                t.start_line(),
+                t.total_lines,
+                t.total_lines,
+                where_
+            ));
+        }
         out.push_str(&format!("[exit {code}]"));
-        Ok(AgentToolResult::text(out))
+
+        let details = if t.truncated() {
+            json!({
+                "truncation": {
+                    "truncated": true,
+                    "truncatedBy": t.truncated_by.map(|b| b.as_str()),
+                    "totalLines": t.total_lines,
+                    "totalBytes": t.total_bytes,
+                    "outputLines": t.output_lines,
+                    "outputBytes": t.output_bytes,
+                    "maxLines": t.max_lines,
+                    "maxBytes": t.max_bytes,
+                },
+                "fullOutputPath": dump.as_ref().map(|p| p.display().to_string()),
+            })
+        } else {
+            Value::Null
+        };
+
+        Ok(AgentToolResult {
+            content: vec![pi_ai::Content::text(out)],
+            details,
+            terminate: false,
+        })
     }
 }
 

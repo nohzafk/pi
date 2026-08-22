@@ -9,6 +9,7 @@ pub mod grep;
 pub mod ls;
 pub mod read;
 pub mod todo;
+pub mod truncate;
 pub mod web_fetch;
 pub mod write;
 

@@ -193,19 +193,25 @@ pub async fn run_agent_with_history(
                     args: args.clone(),
                 },
             );
-            let (content, is_error, terminate) = match tool_obj {
+            let (content, is_error, terminate, details) = match tool_obj {
                 Some(tool) => match tool.execute(&id, args).await {
                     Ok(AgentToolResult {
                         content,
-                        details: _,
+                        details,
                         terminate,
-                    }) => (content, false, terminate),
-                    Err(e) => (vec![Content::text(format!("tool error: {e}"))], true, false),
+                    }) => (content, false, terminate, details),
+                    Err(e) => (
+                        vec![Content::text(format!("tool error: {e}"))],
+                        true,
+                        false,
+                        serde_json::Value::Null,
+                    ),
                 },
                 None => (
                     vec![Content::text(format!("unknown tool: {name}"))],
                     true,
                     false,
+                    serde_json::Value::Null,
                 ),
             };
             if !terminate {
@@ -218,6 +224,7 @@ pub async fn run_agent_with_history(
                     tool_name: name.clone(),
                     is_error,
                     content: content.clone(),
+                    details,
                 },
             );
             // 工具结果加工 —— 可替换（D9）。默认原样传递。

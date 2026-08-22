@@ -133,12 +133,14 @@ fn event_to_json(ev: &AgentEvent) -> serde_json::Value {
             tool_name,
             is_error,
             content,
+            details,
         } => json!({
             "type": "tool_end",
             "tool_call_id": tool_call_id,
             "tool_name": tool_name,
             "is_error": is_error,
             "content": content,
+            "details": details,
         }),
         AgentEvent::PermissionDenied { tool_name, reason } => json!({
             "type": "permission_denied",
